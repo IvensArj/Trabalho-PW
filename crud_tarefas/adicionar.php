@@ -1,5 +1,4 @@
 <?php
-
 require_once "../includes/verificar_login.php";
 require_once "../config/conexao.php";
 require_once "../includes/funcoes.php";
@@ -15,14 +14,8 @@ if (!$idProjeto) {
 $sql = "SELECT id_projeto, titulo FROM projetos
         WHERE id_projeto = ?
         AND id_user = ?";
-
 $stmt = $pdo->prepare($sql);
-
-$stmt->execute([
-    $idProjeto,
-    $idUser
-]);
-
+$stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
@@ -30,7 +23,6 @@ if (!$projeto) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
     $titulo = trim($_POST["titulo"] ?? "");
     $descricao = trim($_POST["descricao"] ?? "");
     $prioridade = trim($_POST["prioridade"] ?? "Media");
@@ -47,9 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sql = "INSERT INTO tarefas
             (titulo, descricao, status, prioridade, id_projeto)
             VALUES (?, ?, ?, ?, ?)";
-
     $stmt = $pdo->prepare($sql);
-
     $stmt->execute([
         $titulo,
         $descricao,
@@ -64,69 +54,80 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit;
 }
 
+$titulo = "Adicionar Tarefa";
+require_once "../includes/header.php";
 ?>
 
-<?php $titulo = "Adicionar Tarefa"; require_once "../includes/header.php"; ?>
-
-<div class="<?= ui_page("max-w-lg"); ?>">
-
-    <h1 class="mb-2 text-3xl font-bold text-slate-950">Adicionar Tarefa</h1>
-
-    <p class="mb-6 text-slate-600">
-        Projeto: <?= htmlspecialchars($projeto->titulo); ?>
-    </p>
-
-    <form action="adicionar.php" method="POST" class="<?= ui_card("p-5"); ?>">
-
-        <input type="hidden" name="id_projeto" value="<?= htmlspecialchars($idProjeto); ?>">
-
-        <div class="mb-4">
-            <input
-                type="text"
-                name="titulo"
-                class="<?= ui_input(); ?>"
-                placeholder="Titulo da tarefa"
-                required
-            >
+<main>
+    <div class="form-notebook">
+        <div class="spiral-bar" aria-hidden="true">
+            <?php for ($i = 0; $i < 12; $i++): ?>
+                <span class="spiral-ring"></span>
+            <?php endfor; ?>
         </div>
 
-        <div class="mb-4">
-            <textarea
-                name="descricao"
-                class="<?= ui_input("min-h-28"); ?>"
-                placeholder="Descricao da tarefa"
-                rows="4"
-            ></textarea>
+        <div class="form-inner">
+            <header class="form-header">
+                <h1 class="form-title">Adicionar Tarefa</h1>
+                <p class="form-subtitle">Projeto: <?= htmlspecialchars($projeto->titulo); ?></p>
+            </header>
+
+            <form action="adicionar.php" method="POST">
+                <input type="hidden" name="id_projeto" value="<?= htmlspecialchars($idProjeto); ?>">
+
+                <div class="form-group">
+                    <label for="titulo" class="form-label">Titulo da tarefa</label>
+                    <input
+                        type="text"
+                        id="titulo"
+                        name="titulo"
+                        class="form-control"
+                        placeholder="Ex: Definir escopo inicial"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao" class="form-label">Descricao</label>
+                    <textarea
+                        id="descricao"
+                        name="descricao"
+                        class="form-control"
+                        placeholder="Detalhes da tarefa..."
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="prioridade" class="form-label">Prioridade</label>
+                    <select id="prioridade" name="prioridade" class="form-control" required>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Alta">Alta</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" name="status" class="form-control" required>
+                        <option value="A Fazer" selected>A Fazer</option>
+                        <option value="Fazendo">Fazendo</option>
+                        <option value="Feito">Feito</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        Salvar tarefa
+                    </button>
+
+                    <a href="../crud_projetos/projeto.php?id=<?= htmlspecialchars($idProjeto); ?>" class="btn btn-secondary">
+                        Cancelar e voltar
+                    </a>
+                </div>
+            </form>
         </div>
-
-        <div class="mb-4">
-            <select name="prioridade" class="<?= ui_input(); ?>" required>
-                <option value="Baixa">Baixa</option>
-                <option value="Media" selected>Media</option>
-                <option value="Alta">Alta</option>
-            </select>
-        </div>
-
-        <div class="mb-4">
-            <select name="status" class="<?= ui_input(); ?>" required>
-                <option value="A Fazer" selected>A Fazer</option>
-                <option value="Fazendo">Fazendo</option>
-                <option value="Feito">Feito</option>
-            </select>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <button type="submit" class="<?= ui_button("primary"); ?>">
-                Salvar
-            </button>
-
-            <a href="../crud_projetos/projeto.php?id=<?= htmlspecialchars($idProjeto); ?>" class="<?= ui_button("secondary"); ?>">
-                Voltar
-            </a>
-        </div>
-
-    </form>
-
-</div>
+    </div>
+</main>
 
 <?php require_once "../includes/footer.php"; ?>

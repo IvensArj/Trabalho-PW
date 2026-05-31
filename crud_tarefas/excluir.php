@@ -4,8 +4,13 @@ require_once "../includes/verificar_login.php";
 require_once "../config/conexao.php";
 require_once "../includes/funcoes.php";
 
-$idTarefa = $_GET["id"] ?? null;
+$idTarefa = $_POST["id"] ?? null;
 $idUser = $_SESSION["usuario_id"];
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: ../dashboard/index.php");
+    exit;
+}
 
 if (!$idTarefa) {
     header("Location: ../dashboard/index.php");

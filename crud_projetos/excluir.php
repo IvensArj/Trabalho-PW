@@ -3,9 +3,9 @@
 require_once "../includes/verificar_login.php";
 require_once "../config/conexao.php";
 
-if ($_SERVER["REQUEST_METHOD"] == "GET") {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $projetoId = $_GET["id"] ?? null;
+    $projetoId = $_POST["id"] ?? null;
     $usuarioId = $_SESSION["usuario_id"];
 
     if (!$projetoId) {

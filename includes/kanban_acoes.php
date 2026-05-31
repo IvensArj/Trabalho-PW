@@ -41,6 +41,20 @@ try {
         }
 
         if ($tipo === "projeto") {
+            $sql = "SELECT id_projeto FROM projetos
+                    WHERE id_projeto = ?
+                    AND id_user = ?";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                $id,
+                $idUser
+            ]);
+
+            if (!$stmt->fetch(PDO::FETCH_OBJ)) {
+                responderJson(["ok" => false, "mensagem" => "Projeto nao encontrado."], 404);
+            }
+
             $sql = "UPDATE projetos
                     SET status = ?
                     WHERE id_projeto = ?
@@ -52,10 +66,6 @@ try {
                 $id,
                 $idUser
             ]);
-
-            if ($stmt->rowCount() === 0) {
-                responderJson(["ok" => false, "mensagem" => "Projeto nao encontrado."], 404);
-            }
 
             responderJson(["ok" => true, "status" => $status]);
         }

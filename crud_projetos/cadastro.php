@@ -1,57 +1,71 @@
-<?php require_once "../includes/verificar_login.php"; ?>
+<?php
+require_once "../includes/verificar_login.php";
 
-<?php $titulo = "Criar Projeto"; require_once "../includes/header.php"; ?>
+$titulo = "Criar Projeto";
+require_once "../includes/header.php";
+?>
 
-<div class="<?= ui_page("max-w-lg"); ?>">
-
-    <h1 class="mb-6 text-3xl font-bold text-slate-950">Criar Projeto</h1>
-
-    <form action="cadastrar.php" method="POST" class="<?= ui_card("p-5"); ?>">
-
-        <div class="mb-4">
-            <input
-                type="text"
-                name="titulo"
-                class="<?= ui_input(); ?>"
-                placeholder="Titulo do projeto"
-                required
-            >
+<main class="">
+    <div class="form-notebook">
+        <div class="spiral-bar" aria-hidden="true">
+            <?php for ($i = 0; $i < 12; $i++): ?>
+                <span class="spiral-ring"></span>
+            <?php endfor; ?>
         </div>
 
-        <div class="mb-4">
-            <textarea
-                name="descricao"
-                class="<?= ui_input("min-h-28"); ?>"
-                placeholder="Descricao do projeto"
-                rows="4"
-            ></textarea>
+        <div class="form-inner">
+            <header class="form-header">
+                <h1 class="form-title">Novo Projeto</h1>
+                <p class="form-subtitle">Preencha os dados para iniciar uma nova pagina.</p>
+            </header>
+
+            <form action="cadastrar.php" method="POST">
+                <div class="form-group">
+                    <label for="titulo" class="form-label">Titulo do projeto</label>
+                    <input
+                        type="text"
+                        id="titulo"
+                        name="titulo"
+                        class="form-control"
+                        placeholder="Ex: Redesign do site corporativo"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao" class="form-label">Descricao</label>
+                    <textarea
+                        id="descricao"
+                        name="descricao"
+                        class="form-control"
+                        placeholder="Detalhes, objetivos e anotacoes iniciais..."
+                        rows="4"
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_entrega" class="form-label">Data de entrega</label>
+                    <input
+                        type="date"
+                        id="data_entrega"
+                        name="data_entrega"
+                        class="form-control"
+                        value="<?= date('Y-m-d') ?>"
+                        required
+                    >
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        Criar projeto
+                    </button>
+                    <a href="../dashboard/index.php" class="btn btn-secondary">
+                        Cancelar e voltar
+                    </a>
+                </div>
+            </form>
         </div>
-
-        <div class="mb-4">
-            <label for="data_entrega" class="block text-sm font-medium text-slate-700 mb-1">
-                Data de Entrega
-            </label>
-            <input
-                type="date"
-                id="data_entrega"
-                name="data_entrega"
-                class="<?= ui_input(); ?>"
-                required
-            >
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <button type="submit" class="<?= ui_button("primary"); ?>">
-                Criar
-            </button>
-
-            <a href="../dashboard/index.php" class="<?= ui_button("secondary"); ?>">
-                Voltar
-            </a>
-        </div>
-
-    </form>
-
-</div>
+    </div>
+</main>
 
 <?php require_once "../includes/footer.php"; ?>

@@ -1,5 +1,4 @@
 <?php
-
 require_once "../includes/verificar_login.php";
 require_once "../includes/funcoes.php";
 require_once "../config/conexao.php";
@@ -15,14 +14,8 @@ if (!$idProjeto) {
 $sql = "SELECT * FROM projetos
         WHERE id_projeto = ?
         AND id_user = ?";
-
 $stmt = $pdo->prepare($sql);
-
-$stmt->execute([
-    $idProjeto,
-    $idUser
-]);
-
+$stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
@@ -34,19 +27,12 @@ $sql = "SELECT tarefas.* FROM tarefas
         WHERE tarefas.id_projeto = ?
         AND projetos.id_user = ?
         ORDER BY tarefas.id_tarefa DESC";
-
 $stmt = $pdo->prepare($sql);
-
-$stmt->execute([
-    $idProjeto,
-    $idUser
-]);
-
+$stmt->execute([$idProjeto, $idUser]);
 $tarefas = $stmt->fetchAll(PDO::FETCH_OBJ);
 
 if (count($tarefas) > 0) {
     $tarefasPorId = [];
-
     foreach ($tarefas as $tarefa) {
         $tarefa->subtarefas = [];
         $tarefasPorId[$tarefa->id_tarefa] = $tarefa;
@@ -61,7 +47,6 @@ if (count($tarefas) > 0) {
             WHERE subtarefas.id_tarefa IN ($placeholders)
             AND projetos.id_user = ?
             ORDER BY subtarefas.id_subtarefa ASC";
-
     $stmt = $pdo->prepare($sql);
     $stmt->execute(array_merge($idsTarefas, [$idUser]));
 
@@ -70,74 +55,75 @@ if (count($tarefas) > 0) {
     }
 }
 
+$statusClasse = [
+    "A Fazer" => "status-amber",
+    "Fazendo" => "status-blue",
+    "Feito" => "status-green",
+];
+$classeStatus = $statusClasse[$projeto->status] ?? "status-amber";
+
+$titulo = "Projeto";
+require_once "../includes/header.php";
 ?>
 
-<?php $titulo = "Projeto"; require_once "../includes/header.php"; ?>
+<canvas id="mouse-trail"></canvas>
 
-<div class="<?= ui_page("max-w-6xl"); ?>">
+<main class=" project-page">
+    <a href="../dashboard/index.php" class="project-back">&larr; voltar ao dashboard</a>
 
-    <div class="<?= ui_card(); ?>">
-
-        <div class="<?= ui_card_body(); ?>">
-
-            <div class="mb-6">
-
-                <h1 class="mb-2 text-3xl font-bold text-slate-950">
+    <article class="project-sheet">
+        <div class="project-sheet__body">
+            <header class="project-header">
+                <h1 class="project-title">
                     <?= htmlspecialchars($projeto->titulo); ?>
                 </h1>
 
-                <div class="flex flex-wrap gap-3 text-sm text-slate-500">
-                    <span>Status: <span data-project-status-value><?= htmlspecialchars($projeto->status); ?></span></span>
-                    <span>Entrega: <?= htmlspecialchars($projeto->data_entrega); ?></span>
+                <div class="project-meta">
+                    <span class="project-meta__item">
+                        <span class="project-meta__label">Status</span>
+                        <span class="status-pill <?= $classeStatus; ?>" data-project-status-value>
+                            <?= htmlspecialchars($projeto->status); ?>
+                        </span>
+                    </span>
+
+                    <span class="project-meta__item">
+                        <span class="project-meta__label">Entrega</span>
+                        <span class="project-meta__value">
+                            <?= htmlspecialchars((new DateTime($projeto->data_entrega))->format('d/m/Y')); ?>
+                        </span>
+                    </span>
                 </div>
+            </header>
 
-            </div>
-
-            <div class="mb-8">
-
-                <h2 class="mb-2 text-lg font-semibold text-slate-900">
-                    Descricao
-                </h2>
-
-                <p class="leading-relaxed text-slate-700">
+            <section class="project-section">
+                <h2 class="project-section__title">Descricao</h2>
+                <p class="project-section__desc">
                     <?= nl2br(htmlspecialchars($projeto->descricao)); ?>
                 </p>
+            </section>
 
-            </div>
+            <section class="project-section">
+                <h2 class="project-section__title">Tarefas</h2>
+                <div class="tasks-wrap">
+                    <?php render($tarefas, "tarefa", $idProjeto); ?>
+                </div>
+            </section>
 
-            <div class="mb-6">
-                <?php render($tarefas, "tarefa"); ?>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-
-                <a
-                    href="../crud_tarefas/adicionar.php?id_projeto=<?= $projeto->id_projeto; ?>"
-                    class="<?= ui_button("primary"); ?>"
-                >
-                    Adicionar Tarefa
+            <div class="actions">
+                <a href="../crud_tarefas/adicionar.php?id_projeto=<?= $idProjeto; ?>" class="btn btn-primary">
+                    + Adicionar tarefa
                 </a>
 
-                <a
-                    href="../crud_projetos/editar.php?id=<?= $projeto->id_projeto; ?>"
-                    class="<?= ui_button("warning"); ?>"
-                >
-                    Editar
+                <a href="../crud_projetos/editar.php?id=<?= $idProjeto; ?>" class="btn btn-secondary">
+                    Editar projeto
                 </a>
 
-                <a
-                    href="../dashboard/index.php"
-                    class="<?= ui_button("secondary"); ?>"
-                >
-                    Voltar
+                <a href="../dashboard/index.php" class="btn btn-ghost">
+                    Cancelar
                 </a>
-
             </div>
-
         </div>
-
-    </div>
-
-</div>
+    </article>
+</main>
 
 <?php require_once "../includes/footer.php"; ?>

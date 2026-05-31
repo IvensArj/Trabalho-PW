@@ -7,11 +7,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nome = trim($_POST["nome"]);
     $email = trim($_POST["email"]);
     $senha = trim($_POST["senha"]);
-    $confirmarSenha = trim($_POST["confirmar_senha"]);
 
     // VALIDACOES
 
-    if (empty($nome) || empty($email) || empty($senha) || empty($confirmarSenha)) {
+    if (empty($nome) || empty($email) || empty($senha)) {
 
         die("Preencha todos os campos.");
 
@@ -20,12 +19,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
         die("Email invalido.");
-
-    }
-
-    if ($senha !== $confirmarSenha) {
-
-        die("As senhas nao coincidem.");
 
     }
 

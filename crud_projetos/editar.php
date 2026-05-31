@@ -1,5 +1,4 @@
 <?php
-
 require_once "../includes/verificar_login.php";
 require_once "../config/conexao.php";
 
@@ -14,86 +13,90 @@ if (!$idProjeto) {
 $sql = "SELECT * FROM projetos
         WHERE id_projeto = ?
         AND id_user = ?";
-
 $stmt = $pdo->prepare($sql);
-
-$stmt->execute([
-    $idProjeto,
-    $idUser
-]);
-
+$stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
     die("Projeto nao encontrado.");
 }
 
+$titulo = "Editar Projeto";
+require_once "../includes/header.php";
 ?>
 
-<?php $titulo = "Editar Projeto"; require_once "../includes/header.php"; ?>
-
-<div class="<?= ui_page("max-w-lg"); ?>">
-
-    <h1 class="mb-6 text-3xl font-bold text-slate-950">
-        Editar Projeto
-    </h1>
-
-    <form action="atualizar.php" method="POST" class="<?= ui_card("p-5"); ?>">
-
-        <input type="hidden" name="id" value="<?= $projeto->id_projeto; ?>">
-
-        <div class="mb-4">
-            <input
-                type="text"
-                name="titulo"
-                class="<?= ui_input(); ?>"
-                value="<?= htmlspecialchars($projeto->titulo); ?>"
-                required
-            >
+<main class="">
+    <div class="form-notebook">
+        <div class="spiral-bar" aria-hidden="true">
+            <?php for ($i = 0; $i < 12; $i++): ?>
+                <span class="spiral-ring"></span>
+            <?php endfor; ?>
         </div>
 
-        <div class="mb-4">
-            <textarea
-                name="descricao"
-                class="<?= ui_input("min-h-28"); ?>"
-                rows="4"
-            ><?= htmlspecialchars($projeto->descricao); ?></textarea>
+        <div class="form-inner">
+            <header class="form-header">
+                <h1 class="form-title">Editar Projeto</h1>
+                <p class="form-subtitle">Atualize a pagina do projeto sem perder o fluxo.</p>
+            </header>
+
+            <form action="atualizar.php" method="POST">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($projeto->id_projeto); ?>">
+
+                <div class="form-group">
+                    <label for="titulo" class="form-label">Titulo do projeto</label>
+                    <input
+                        type="text"
+                        id="titulo"
+                        name="titulo"
+                        class="form-control"
+                        value="<?= htmlspecialchars($projeto->titulo); ?>"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao" class="form-label">Descricao</label>
+                    <textarea
+                        id="descricao"
+                        name="descricao"
+                        class="form-control"
+                        rows="4"
+                    ><?= htmlspecialchars($projeto->descricao); ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" name="status" class="form-control" required>
+                        <option value="A Fazer" <?= $projeto->status == "A Fazer" ? "selected" : ""; ?>>A Fazer</option>
+                        <option value="Fazendo" <?= $projeto->status == "Fazendo" ? "selected" : ""; ?>>Fazendo</option>
+                        <option value="Feito" <?= $projeto->status == "Feito" ? "selected" : ""; ?>>Feito</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_entrega" class="form-label">Data de entrega</label>
+                    <input
+                        type="date"
+                        id="data_entrega"
+                        name="data_entrega"
+                        class="form-control"
+                        value="<?= htmlspecialchars($projeto->data_entrega); ?>"
+                        required
+                    >
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        Atualizar projeto
+                    </button>
+
+                    <a href="../crud_projetos/projeto.php?id=<?= htmlspecialchars($projeto->id_projeto); ?>" class="btn btn-secondary">
+                        Cancelar e voltar
+                    </a>
+                </div>
+            </form>
         </div>
-
-        <div class="mb-4">
-            <select name="status" class="<?= ui_input(); ?>" required>
-                <option value="A Fazer" <?= $projeto->status == "A Fazer" ? "selected" : ""; ?>>A Fazer</option>
-                <option value="Fazendo" <?= $projeto->status == "Fazendo" ? "selected" : ""; ?>>Fazendo</option>
-                <option value="Feito" <?= $projeto->status == "Feito" ? "selected" : ""; ?>>Feito</option>
-            </select>
-        </div>
-
-        <div class="mb-4">
-            <label for="data_entrega" class="block text-sm font-medium text-slate-700 mb-1">
-                Data de Entrega
-            </label>
-            <input
-                type="date"
-                id="data_entrega"
-                name="data_entrega"
-                class="<?= ui_input(); ?>"
-                value="<?= htmlspecialchars($projeto->data_entrega); ?>"
-                required
-            >
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <button type="submit" class="<?= ui_button("warning"); ?>">
-                Atualizar
-            </button>
-
-            <a href="../dashboard/index.php" class="<?= ui_button("secondary"); ?>">
-                Voltar
-            </a>
-        </div>
-
-    </form>
-
-</div>
+    </div>
+</main>
 
 <?php require_once "../includes/footer.php"; ?>

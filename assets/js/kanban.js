@@ -74,6 +74,7 @@
                     onStart: function (event) {
                         dragState.parent = event.from;
                         dragState.nextSibling = event.item.nextElementSibling;
+                        dragState.status = event.from.dataset.status || null;
                         board.classList.add("kanban-dragging");
                     },
 
@@ -89,6 +90,11 @@
                         var novoStatus = event.to.dataset.status;
 
                         updateEmptyMessages(board);
+
+                        if (novoStatus === dragState.status) {
+                            return;
+                        }
+
                         setCardLoading(card, true);
 
                         requestKanbanAction({

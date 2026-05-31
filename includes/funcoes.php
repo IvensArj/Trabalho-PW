@@ -62,275 +62,312 @@ function atualizarStatusProjeto($pdo, $idProjeto, $idUser = null) {
     return $novoStatus;
 }
 
-function render($items, $tipo = "projeto") {
+function limitarDescricaoKanban($texto, $limiteLinhas = 6, $caracteresPorLinha = 42) {
+    $texto = (string) $texto;
+    $linhas = preg_split("/\r\n|\r|\n/", $texto);
+    $resultado = [];
+    $linhasUsadas = 0;
+    $foiCortado = false;
 
-    $a_fazer = [];
-    $fazendo = [];
-    $feito = [];
+    foreach ($linhas as $indice => $linha) {
+        $tamanhoLinha = function_exists("mb_strlen")
+            ? mb_strlen($linha, "UTF-8")
+            : strlen($linha);
 
-    foreach($items as $item) {
+        $linhasNecessarias = max(1, (int) ceil($tamanhoLinha / $caracteresPorLinha));
+        $linhasRestantes = $limiteLinhas - $linhasUsadas;
 
-        if($item->status == "A Fazer") {
-            $a_fazer[] = $item;
+        if ($linhasRestantes <= 0) {
+            $foiCortado = true;
+            break;
         }
 
-        elseif($item->status == "Fazendo") {
-            $fazendo[] = $item;
+        if ($linhasNecessarias > $linhasRestantes) {
+            $limiteCaracteres = $linhasRestantes * $caracteresPorLinha;
+            $resultado[] = function_exists("mb_substr")
+                ? rtrim(mb_substr($linha, 0, $limiteCaracteres, "UTF-8"))
+                : rtrim(substr($linha, 0, $limiteCaracteres));
+
+            $foiCortado = true;
+            break;
         }
 
-        elseif($item->status == "Feito") {
-            $feito[] = $item;
-        }
+        $resultado[] = $linha;
+        $linhasUsadas += $linhasNecessarias;
 
+        if ($linhasUsadas >= $limiteLinhas && $indice < count($linhas) - 1) {
+            $foiCortado = true;
+            break;
+        }
     }
 
+    $textoLimitado = rtrim(implode("\n", $resultado));
+
+    return $foiCortado ? $textoLimitado . " [...]" : $textoLimitado;
+}
+
+
+function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): void
+{
     $colunas = [
-        "A Fazer" => $a_fazer,
-        "Fazendo" => $fazendo,
-        "Feito" => $feito
+        'A Fazer' => [],
+        'Fazendo'  => [],
+        'Feito'    => [],
     ];
 
-    $idCampo = $tipo == "tarefa" ? "id_tarefa" : "id_projeto";
-    $nomeTipo = $tipo == "tarefa" ? "tarefa" : "projeto";
-    $textoLixeira = $tipo == "tarefa" ? "Solte aqui para excluir a tarefa" : "Solte aqui para excluir o projeto";
+    foreach ($items as $item) {
+        $status = $item->status ?? 'A Fazer';
+        if (!isset($colunas[$status])) {
+            $status = 'A Fazer';
+        }
+        $colunas[$status][] = $item;
+    }
 
+    $idCampo = $tipo === 'tarefa' ? 'id_tarefa' : 'id_projeto';
+    $nomeTipo = $tipo === 'tarefa' ? 'tarefa' : 'projeto';
+    $textoLixeira = $tipo === 'tarefa'
+        ? 'Solte aqui para excluir a tarefa'
+        : 'Solte aqui para excluir o projeto';
+
+    $configColunas = [
+        'A Fazer' => ['classe' => 'col-amber', 'icone' => '○'],
+        'Fazendo' => ['classe' => 'col-blue',  'icone' => '◐'],
+        'Feito'   => ['classe' => 'col-green', 'icone' => '●'],
+    ];
+
+    $esc = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
     ?>
 
-    <div class="kanban-board" data-kanban-board data-tipo="<?= $nomeTipo; ?>">
+    <div data-kanban-board data-tipo="<?= $esc($nomeTipo); ?>">
+        <section class="nb-columns" aria-label="Itens por status">
+            <?php foreach ($configColunas as $status => $config): ?>
+                <?php $lista = $colunas[$status]; ?>
+                <?php $colunaId = "kanban-" . $nomeTipo . "-" . preg_replace('/[^a-z0-9]+/i', '-', strtolower($status)); ?>
 
-    <div class="grid gap-4 md:grid-cols-3">
-
-        <?php foreach($colunas as $status => $lista): ?>
-
-            <div>
-
-                <div class="<?= ui_card("h-full"); ?>">
-
-                    <div class="<?=
-
-                        $status == "A Fazer"
-                        ? ui_column_header("todo")
-
-                        : ($status == "Fazendo"
-                            ? ui_column_header("doing")
-                            : ui_column_header("done")
-                        );
-
-                    ?>">
-
-                        <h2 class="text-lg font-semibold">
-                            <?= $status; ?>
+                <div
+                    class="nb-col <?= $config['classe']; ?>"
+                    data-kanban-column
+                    data-status="<?= $esc($status); ?>"
+                    role="region"
+                    aria-labelledby="<?= $esc($colunaId); ?>"
+                >
+                    <div class="col-header">
+                        <h2 class="col-title" id="<?= $esc($colunaId); ?>">
+                            <span aria-hidden="true"><?= $config['icone']; ?></span>
+                            <?= $esc($status); ?>
                         </h2>
-
+                        <span class="col-count"><?= count($lista); ?></span>
                     </div>
 
-                    <div
-                        class="<?= ui_card_body("kanban-column min-h-28"); ?>"
-                        data-kanban-column
-                        data-status="<?= htmlspecialchars($status); ?>"
-                    >
+                    <?php if (empty($lista)): ?>
+                        <div class="card-empty" data-empty-message>
+                            <?php if ($tipo === 'tarefa'): ?>
+                                <a href="../crud_tarefas/adicionar.php?id_projeto=<?= $idProjeto; ?>">+ nenhuma tarefa aqui ainda</a>
+                            <?php else: ?>
+                                <a href="../crud_projetos/cadastro.php">+ nenhum projeto aqui ainda</a>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($lista as $item): ?>
+                            <?php
+                                $id = $item->{$idCampo};
+                                $tituloItem = (string) ($item->titulo ?? 'Sem titulo');
+                                $tituloId = "kanban-" . $nomeTipo . "-" . $id . "-titulo";
 
-                        <?php if(count($lista) > 0): ?>
+                                if ($tipo === 'projeto') {
+                                    $abrir  = "../crud_projetos/projeto.php?id=" . $id;
+                                    $editar = "../crud_projetos/editar.php?id=" . $id;
+                                    $excluir = "../crud_projetos/excluir.php";
 
-                            <?php foreach($lista as $item): ?>
-
-                                <?php
-
-                                if($tipo == "projeto") {
-
-                                    $abrir = "../crud_projetos/projeto.php?id=" . $item->id_projeto;
-
-                                    $editar = "../crud_projetos/editar.php?id=" . $item->id_projeto;
-
-                                    $excluir = "../crud_projetos/excluir.php?id=" . $item->id_projeto;
-
+                                    $total = (int) ($item->total_tarefas ?? 0);
+                                    $feitas = (int) ($item->tarefas_concluidas ?? 0);
+                                    $percentual = $total > 0 ? (int) round(($feitas / $total) * 100) : 0;
+                                } else {
+                                    $abrir = null;
+                                    $editar = "../crud_tarefas/editar.php?id=" . $id;
+                                    $excluir = "../crud_tarefas/excluir.php";
                                 }
 
-                                elseif($tipo == "tarefa") {
-
-                                    $abrir = "#";
-
-                                    $editar = "../crud_tarefas/editar.php?id=" . $item->id_tarefa;
-
-                                    $excluir = "../crud_tarefas/excluir.php?id=" . $item->id_tarefa;
-
+                                $descricao = $item->descricao ?? '';
+                                if ($descricao !== '' && function_exists('limitarDescricaoKanban')) {
+                                    $descricao = limitarDescricaoKanban($descricao);
                                 }
 
-                                ?>
+                                $subtarefas = [];
+                                if ($tipo === 'tarefa' && isset($item->subtarefas) && is_array($item->subtarefas)) {
+                                    $subtarefas = $item->subtarefas;
+                                }
+                            ?>
 
-                                <div
-                                    class="<?= ui_card("kanban-card mb-3 cursor-grab active:cursor-grabbing"); ?>"
-                                    data-kanban-card
-                                    data-id="<?= htmlspecialchars($item->{$idCampo}); ?>"
-                                    data-tipo="<?= $nomeTipo; ?>"
-                                >
+                            <article
+                                class="kanban-item-card kanban-card <?= $tipo === 'tarefa' ? 'kanban-task-card' : 'kanban-project-card'; ?>"
+                                data-kanban-card
+                                data-id="<?= $esc($id); ?>"
+                                data-tipo="<?= $esc($nomeTipo); ?>"
+                                aria-labelledby="<?= $esc($tituloId); ?>"
+                            >
+                                <h3 class="card-name" id="<?= $esc($tituloId); ?>">
+                                    <?= $esc($item->titulo ?? 'Sem título'); ?>
+                                </h3>
 
-                                    <div class="<?= ui_card_body(); ?>">
+                                <?php if ($tipo === 'projeto' && $total > 0): ?>
+                                    <div class="card-progress-wrap">
+                                        <div class="card-progress-bar" aria-hidden="true">
+                                            <div
+                                                class="card-progress-fill"
+                                                style="width: <?= $percentual; ?>%;"
+                                                data-target="<?= $percentual; ?>"
+                                            ></div>
+                                        </div>
+                                        <span class="card-progress-label">
+                                            <?= $feitas; ?> de <?= $total; ?> tarefas — <?= $percentual; ?>%
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
 
-                                        <h3 class="mb-2 text-base font-semibold text-slate-900">
-                                            <?= htmlspecialchars($item->titulo); ?>
-                                        </h3>
+                                <?php if ($tipo === 'tarefa' && $descricao !== ''): ?>
+                                    <p class="card-desc" title="<?= $esc($item->descricao ?? ''); ?>">
+                                        <?= nl2br($esc($descricao)); ?>
+                                    </p>
+                                <?php endif; ?>
 
-                                        <p class="text-sm text-slate-600">
-                                            <?= htmlspecialchars($item->descricao); ?>
-                                        </p>
+                                <?php if ($tipo === 'tarefa' && isset($item->prioridade)): ?>
+                                    <div class="card-priority-wrap">
+                                        <span class="priority-pill">
+                                            Prioridade: <?= $esc($item->prioridade); ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
 
-                                        <?php if($tipo == "tarefa" && isset($item->prioridade)): ?>
+                                <?php if ($tipo === 'tarefa'): ?>
+                                    <?php
+                                        $totalSubtarefas = count($subtarefas);
+                                        $subtarefasConcluidas = 0;
 
-                                            <span class="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                                Prioridade: <?= htmlspecialchars($item->prioridade); ?>
+                                        foreach ($subtarefas as $subtarefa) {
+                                            if ((int) ($subtarefa->concluida ?? 0) === 1) {
+                                                $subtarefasConcluidas++;
+                                            }
+                                        }
+                                    ?>
+
+                                    <div
+                                        class="subtasks"
+                                        data-subtasks
+                                        data-task-id="<?= $esc($id); ?>"
+                                    >
+                                        <div class="subtasks-header">
+                                            <span class="subtasks-title">
+                                                Subtarefas
+                                                <span data-subtasks-count><?= $subtarefasConcluidas; ?>/<?= $totalSubtarefas; ?></span>
                                             </span>
 
-                                        <?php endif; ?>
-
-                                        <?php if($tipo == "tarefa"): ?>
-
-                                            <?php
-                                                $subtarefas = $item->subtarefas ?? [];
-                                                $totalSubtarefas = count($subtarefas);
-                                                $subtarefasConcluidas = 0;
-
-                                                foreach($subtarefas as $subtarefa) {
-                                                    if((int) $subtarefa->concluida === 1) {
-                                                        $subtarefasConcluidas++;
-                                                    }
-                                                }
-                                            ?>
-
-                                            <div
-                                                class="subtasks mt-4 border-t border-slate-100 pt-3"
-                                                data-subtasks
-                                                data-task-id="<?= htmlspecialchars($item->id_tarefa); ?>"
+                                            <button
+                                                type="button"
+                                                class="subtask-add-toggle"
+                                                data-subtask-add-toggle
+                                                aria-label="Adicionar subtarefa"
                                             >
+                                                +
+                                            </button>
+                                        </div>
 
-                                                <div class="mb-2 flex items-center justify-between gap-2">
-                                                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                                        Subtarefas
-                                                        <span data-subtasks-count><?= $subtarefasConcluidas; ?>/<?= $totalSubtarefas; ?></span>
+                                        <div class="subtasks-list" data-subtasks-list>
+                                            <?php foreach ($subtarefas as $subtarefa): ?>
+                                                <div
+                                                    class="subtask-item"
+                                                    data-subtask-item
+                                                    data-subtask-id="<?= $esc($subtarefa->id_subtarefa ?? ''); ?>"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        class="subtask-checkbox"
+                                                        data-subtask-checkbox
+                                                        aria-label="Marcar subtarefa <?= $esc($subtarefa->titulo ?? ''); ?> como concluida"
+                                                        <?= ((int) ($subtarefa->concluida ?? 0) === 1) ? 'checked' : ''; ?>
+                                                    >
+
+                                                    <span class="subtask-title <?= ((int) ($subtarefa->concluida ?? 0) === 1) ? 'is-done' : ''; ?>" data-subtask-title>
+                                                        <?= $esc($subtarefa->titulo ?? ''); ?>
                                                     </span>
 
                                                     <button
                                                         type="button"
-                                                        class="subtask-add-toggle inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-base font-semibold leading-none text-slate-700 hover:bg-slate-50"
-                                                        data-subtask-add-toggle
-                                                        aria-label="Adicionar subtarefa"
+                                                        class="subtask-delete"
+                                                        data-subtask-delete
+                                                        aria-label="Excluir subtarefa <?= $esc($subtarefa->titulo ?? ''); ?>"
                                                     >
-                                                        +
+                                                        x
                                                     </button>
                                                 </div>
-
-                                                <div class="space-y-1" data-subtasks-list>
-                                                    <?php foreach($subtarefas as $subtarefa): ?>
-                                                        <div
-                                                            class="subtask-item flex items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-50"
-                                                            data-subtask-item
-                                                            data-subtask-id="<?= htmlspecialchars($subtarefa->id_subtarefa); ?>"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                class="subtask-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                                                                data-subtask-checkbox
-                                                                <?= (int) $subtarefa->concluida === 1 ? "checked" : ""; ?>
-                                                            >
-
-                                                            <span class="min-w-0 flex-1 text-slate-700 <?= (int) $subtarefa->concluida === 1 ? "line-through text-slate-400" : ""; ?>" data-subtask-title>
-                                                                <?= htmlspecialchars($subtarefa->titulo); ?>
-                                                            </span>
-
-                                                            <button
-                                                                type="button"
-                                                                class="subtask-delete text-xs font-semibold text-rose-600 hover:text-rose-700"
-                                                                data-subtask-delete
-                                                                aria-label="Excluir subtarefa"
-                                                            >
-                                                                x
-                                                            </button>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-
-                                                <form class="mt-2 hidden gap-2" data-subtask-form>
-                                                    <input
-                                                        type="text"
-                                                        name="titulo"
-                                                        class="<?= ui_input("py-1.5 text-xs"); ?>"
-                                                        placeholder="Nova subtarefa"
-                                                        maxlength="150"
-                                                        data-subtask-input
-                                                    >
-
-                                                    <button type="submit" class="<?= ui_button("primary", "sm"); ?>">
-                                                        Salvar
-                                                    </button>
-                                                </form>
-
-                                            </div>
-
-                                        <?php endif; ?>
-
-                                        <div class="mt-4 flex flex-wrap gap-2">
-
-                                            <?php if($tipo == "projeto"): ?>
-
-                                                <a
-                                                    href="<?= $abrir; ?>"
-                                                    class="<?= ui_button("primary", "sm"); ?>"
-                                                >
-                                                    Abrir
-                                                </a>
-
-                                            <?php endif; ?>
-
-                                            <a
-                                                href="<?= $editar; ?>"
-                                                class="<?= ui_button("warning", "sm"); ?>"
-                                            >
-                                                Editar
-                                            </a>
-
-                                            <a
-                                                href="<?= $excluir; ?>"
-                                                class="<?= ui_button("danger", "sm"); ?>"
-                                                onclick="return confirm('Deseja excluir este item?')"
-                                            >
-                                                Excluir
-                                            </a>
-
+                                            <?php endforeach; ?>
                                         </div>
 
+                                        <form class="subtask-form hidden" data-subtask-form>
+                                            <input
+                                                type="text"
+                                                name="titulo"
+                                                class="subtask-input"
+                                                placeholder="Nova subtarefa"
+                                                maxlength="150"
+                                                data-subtask-input
+                                            >
+
+                                            <button type="submit" class="subtask-save">
+                                                Salvar
+                                            </button>
+                                        </form>
                                     </div>
+                                <?php endif; ?>
 
+                                <div class="card-meta">
+                                    <?php if ($tipo === 'projeto'): ?>
+                                        <a
+                                            href="<?= $esc($abrir); ?>"
+                                            class="card-action card-action-primary"
+                                            aria-label="Abrir projeto <?= $esc($tituloItem); ?>"
+                                        >
+                                            Abrir
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <a
+                                        href="<?= $esc($editar); ?>"
+                                        class="card-action card-action-warning"
+                                        aria-label="Editar <?= $esc($nomeTipo); ?> <?= $esc($tituloItem); ?>"
+                                    >
+                                        Editar
+                                    </a>
+
+                                    <form
+                                        action="<?= $esc($excluir); ?>"
+                                        method="POST"
+                                        class="card-delete-form"
+                                        onsubmit="return confirm('Deseja excluir este item?')"
+                                    >
+                                        <input type="hidden" name="id" value="<?= $esc($id); ?>">
+                                        <button
+                                            type="submit"
+                                            class="card-action card-action-danger"
+                                            aria-label="Excluir <?= $esc($nomeTipo); ?> <?= $esc($tituloItem); ?>"
+                                        >
+                                            Excluir
+                                        </button>
+                                    </form>
                                 </div>
-
-                            <?php endforeach; ?>
-
-                        <?php else: ?>
-
-                            <p class="text-sm text-slate-500" data-empty-message>
-                                Nenhum item.
-                            </p>
-
-                        <?php endif; ?>
-
-                    </div>
-
+                            </article>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
+            <?php endforeach; ?>
+        </section>
 
-            </div>
-
-        <?php endforeach; ?>
-
-    </div>
-
-    <div
-        class="kanban-trash mt-4 flex min-h-20 items-center justify-center rounded-lg border-2 border-dashed border-rose-300 bg-rose-50 px-4 py-5 text-center text-sm font-medium text-rose-700 transition"
-        data-kanban-trash
-    >
-        <?= $textoLixeira; ?>
-    </div>
-
+        <div class="kanban-trash nb-trash" data-kanban-trash>
+            <?= $esc($textoLixeira); ?>
+        </div>
     </div>
 
     <?php
-
 }
+
+?>
