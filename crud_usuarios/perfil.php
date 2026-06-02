@@ -150,6 +150,7 @@ $status_cfg = [
             <div class="danger-wrap">
                 <span class="danger-lbl">⚠ zona de perigo</span>
                 <form action="excluir.php" method="POST">
+                    <?= csrfInput(); ?>
                     <button
                         type="submit"
                         class="nb-perfil-btn nb-perfil-btn-danger"

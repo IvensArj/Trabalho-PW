@@ -5,7 +5,9 @@
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            body: new URLSearchParams(payload)
+            body: new URLSearchParams(Object.assign({
+                csrf_token: window.CSRF_TOKEN || ""
+            }, payload))
         }).then(function (response) {
             return response.json().then(function (data) {
                 if (!response.ok || !data.ok) {
@@ -98,7 +100,11 @@
                 updateCount(container);
             }).catch(function (error) {
                 item.classList.remove("opacity-60", "pointer-events-none");
-                alert(error.message);
+                if (typeof window.showAppMessage === "function") {
+                    window.showAppMessage(error.message, "error");
+                } else {
+                    alert(error.message);
+                }
             });
         }
     });
@@ -125,7 +131,11 @@
         }).catch(function (error) {
             setItemDone(item, !checked);
             updateCount(container);
-            alert(error.message);
+            if (typeof window.showAppMessage === "function") {
+                window.showAppMessage(error.message, "error");
+            } else {
+                alert(error.message);
+            }
         }).finally(function () {
             item.classList.remove("opacity-60");
         });
@@ -164,7 +174,11 @@
             updateCount(container);
             input.focus();
         }).catch(function (error) {
-            alert(error.message);
+            if (typeof window.showAppMessage === "function") {
+                window.showAppMessage(error.message, "error");
+            } else {
+                alert(error.message);
+            }
         }).finally(function () {
             input.disabled = false;
             button.disabled = false;

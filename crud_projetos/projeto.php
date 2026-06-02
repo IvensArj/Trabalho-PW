@@ -19,7 +19,7 @@ $stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
-    die("Projeto nao encontrado.");
+    redirecionarComFlash("../dashboard/index.php", "error", "Projeto nao encontrado.");
 }
 
 $sql = "SELECT tarefas.* FROM tarefas

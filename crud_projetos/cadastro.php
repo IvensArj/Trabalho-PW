@@ -20,6 +20,8 @@ require_once "../includes/header.php";
             </header>
 
             <form action="cadastrar.php" method="POST">
+                <?= csrfInput(); ?>
+
                 <div class="form-group">
                     <label for="titulo" class="form-label">Titulo do projeto</label>
                     <input

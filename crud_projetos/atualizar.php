@@ -5,6 +5,8 @@ require_once "../config/conexao.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    validarCsrf();
+
     $idProjeto = $_POST["id"] ?? null;
     $titulo = trim($_POST["titulo"] ?? "");
     $descricao = trim($_POST["descricao"] ?? "");
@@ -13,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $idUser = $_SESSION["usuario_id"];
 
     if (!$idProjeto || empty($titulo) || empty($dataEntrega) || !in_array($status, ["A Fazer", "Fazendo", "Feito"])) {
-        die("Dados invalidos.");
+        redirecionarComFlash("../dashboard/index.php", "error", "Dados invalidos.");
     }
 
     try {
@@ -43,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (PDOException $e) {
 
         error_log("Erro ao atualizar projeto: " . $e->getMessage());
-        die("Erro ao atualizar projeto.");
+        redirecionarComFlash("../dashboard/index.php", "error", "Erro ao atualizar projeto.");
 
     }
 }

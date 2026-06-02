@@ -16,7 +16,9 @@
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            body: new URLSearchParams(payload)
+            body: new URLSearchParams(Object.assign({
+                csrf_token: window.CSRF_TOKEN || ""
+            }, payload))
         }).then(function (response) {
             return response.json().then(function (data) {
                 if (!response.ok || !data.ok) {
@@ -111,7 +113,11 @@
                         }).catch(function (error) {
                             restoreCard(card, dragState.parent, dragState.nextSibling);
                             updateEmptyMessages(board);
-                            alert(error.message);
+                            if (typeof window.showAppMessage === "function") {
+                                window.showAppMessage(error.message, "error");
+                            } else {
+                                alert(error.message);
+                            }
                         }).finally(function () {
                             setCardLoading(card, false);
                         });
@@ -156,7 +162,11 @@
                         }).catch(function (error) {
                             restoreCard(card, dragState.parent, dragState.nextSibling);
                             updateEmptyMessages(board);
-                            alert(error.message);
+                            if (typeof window.showAppMessage === "function") {
+                                window.showAppMessage(error.message, "error");
+                            } else {
+                                alert(error.message);
+                            }
                         }).finally(function () {
                             setCardLoading(card, false);
                             board.classList.remove("kanban-dragging");

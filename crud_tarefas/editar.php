@@ -19,7 +19,7 @@ $stmt->execute([$idTarefa, $idUser]);
 $tarefa = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$tarefa) {
-    die("Tarefa nao encontrada.");
+    redirecionarComFlash("../dashboard/index.php", "error", "Tarefa nao encontrada.");
 }
 
 $titulo = "Editar Tarefa";
@@ -41,6 +41,7 @@ require_once "../includes/header.php";
             </header>
 
             <form action="atualizar.php" method="POST">
+                <?= csrfInput(); ?>
                 <input type="hidden" name="id" value="<?= htmlspecialchars($tarefa->id_tarefa); ?>">
                 <input type="hidden" name="id_projeto" value="<?= htmlspecialchars($tarefa->id_projeto); ?>">
 

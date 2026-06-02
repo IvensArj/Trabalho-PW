@@ -5,6 +5,8 @@ require_once "../config/conexao.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    validarCsrf();
+
     $titulo = trim($_POST["titulo"] ?? "");
     $descricao = trim($_POST["descricao"] ?? "");
     $idUser = $_SESSION["usuario_id"];
@@ -12,7 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dataCriacao = date("Y-m-d H:i:s");
 
     if (empty($titulo) || empty($dataEntrega)) {
-        die("Preencha todos os campos.");
+        redirecionarComFlash("cadastro.php", "error", "Preencha todos os campos.");
     }
 
     $foto_perfil = "default.png";
@@ -46,8 +48,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $caminhoCompleto,
                 $dadosImagem
             );
-
-            $foto_perfil = $nomeArquivo;
         }
     }
 
@@ -55,19 +55,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             (
                 titulo,
                 descricao,
-                foto_perfil,
                 id_user,
                 data_entrega,
                 data_criacao
             )
-            VALUES (?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?)";
 
     $stmt = $pdo->prepare($sql);
 
     $stmt->execute([
         $titulo,
         $descricao,
-        $foto_perfil,
         $idUser,
         $dataEntrega,
         $dataCriacao

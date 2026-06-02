@@ -15,10 +15,13 @@ if (!isset($_SESSION["usuario_id"])) {
 }
 
 require_once __DIR__ . "/../config/conexao.php";
+require_once __DIR__ . "/funcoes.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responderJson(["ok" => false, "mensagem" => "Metodo invalido."], 405);
 }
+
+validarCsrf();
 
 $acao = $_POST["acao"] ?? "";
 $idUser = $_SESSION["usuario_id"];

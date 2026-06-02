@@ -19,21 +19,23 @@ $stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
-    die("Projeto nao encontrado.");
+    redirecionarComFlash("../dashboard/index.php", "error", "Projeto nao encontrado.");
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    validarCsrf();
+
     $titulo = trim($_POST["titulo"] ?? "");
     $descricao = trim($_POST["descricao"] ?? "");
     $prioridade = trim($_POST["prioridade"] ?? "Media");
     $status = trim($_POST["status"] ?? "A Fazer");
 
     if (empty($titulo)) {
-        die("Informe o titulo da tarefa.");
+        redirecionarComFlash("adicionar.php?id_projeto=" . urlencode((string) $idProjeto), "error", "Informe o titulo da tarefa.");
     }
 
     if (!in_array($prioridade, ["Baixa", "Media", "Alta"]) || !in_array($status, ["A Fazer", "Fazendo", "Feito"])) {
-        die("Dados invalidos.");
+        redirecionarComFlash("adicionar.php?id_projeto=" . urlencode((string) $idProjeto), "error", "Dados invalidos.");
     }
 
     $sql = "INSERT INTO tarefas
@@ -73,6 +75,7 @@ require_once "../includes/header.php";
             </header>
 
             <form action="adicionar.php" method="POST">
+                <?= csrfInput(); ?>
                 <input type="hidden" name="id_projeto" value="<?= htmlspecialchars($idProjeto); ?>">
 
                 <div class="form-group">

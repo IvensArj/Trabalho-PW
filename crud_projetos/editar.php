@@ -18,7 +18,7 @@ $stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
 
 if (!$projeto) {
-    die("Projeto nao encontrado.");
+    redirecionarComFlash("../dashboard/index.php", "error", "Projeto nao encontrado.");
 }
 
 $titulo = "Editar Projeto";
@@ -40,6 +40,7 @@ require_once "../includes/header.php";
             </header>
 
             <form action="atualizar.php" method="POST">
+                <?= csrfInput(); ?>
                 <input type="hidden" name="id" value="<?= htmlspecialchars($projeto->id_projeto); ?>">
 
                 <div class="form-group">

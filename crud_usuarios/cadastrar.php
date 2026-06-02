@@ -1,8 +1,13 @@
 <?php
 
 require_once "../config/conexao.php";
+require_once "../includes/funcoes.php";
+
+iniciarSessaoSegura();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    validarCsrf();
 
     $nome = trim($_POST["nome"]);
     $email = trim($_POST["email"]);
@@ -12,19 +17,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (empty($nome) || empty($email) || empty($senha)) {
 
-        die("Preencha todos os campos.");
+        redirecionarComFlash("login.php?tab=criar", "error", "Preencha todos os campos.");
 
     }
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
-        die("Email invalido.");
+        redirecionarComFlash("login.php?tab=criar", "error", "Email invalido.");
 
     }
 
     if (strlen($senha) < 6) {
 
-        die("A senha deve ter no minimo 6 caracteres.");
+        redirecionarComFlash("login.php?tab=criar", "error", "A senha deve ter no minimo 6 caracteres.");
 
     }
 
@@ -38,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($stmt->rowCount() > 0) {
 
-        die("Este email ja esta cadastrado.");
+        redirecionarComFlash("login.php?tab=criar", "error", "Este email ja esta cadastrado.");
 
     }
 
@@ -103,6 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $fotoPerfil
     ]);
 
+    unset($_SESSION["csrf_token"]);
     header("Location: login.php");
 
     exit;

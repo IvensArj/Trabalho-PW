@@ -21,6 +21,8 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responderJson(["ok" => false, "mensagem" => "Metodo invalido."], 405);
 }
 
+validarCsrf();
+
 $acao = $_POST["acao"] ?? "";
 $tipo = $_POST["tipo"] ?? "";
 $id = $_POST["id"] ?? null;

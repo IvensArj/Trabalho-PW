@@ -4,13 +4,15 @@ require_once "../includes/verificar_login.php";
 require_once "../config/conexao.php";
 require_once "../includes/funcoes.php";
 
-$idTarefa = $_POST["id"] ?? null;
-$idUser = $_SESSION["usuario_id"];
-
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: ../dashboard/index.php");
     exit;
 }
+
+validarCsrf();
+
+$idTarefa = $_POST["id"] ?? null;
+$idUser = $_SESSION["usuario_id"];
 
 if (!$idTarefa) {
     header("Location: ../dashboard/index.php");
@@ -33,8 +35,8 @@ try {
 
     $tarefa = $stmt->fetch(PDO::FETCH_OBJ);
 
-    if (!$tarefa) {
-        die("Tarefa nao encontrada.");
+if (!$tarefa) {
+        redirecionarComFlash("../dashboard/index.php", "error", "Tarefa nao encontrada.");
     }
 
     $sql = "DELETE tarefas FROM tarefas
@@ -57,6 +59,6 @@ try {
 } catch (PDOException $e) {
 
     error_log("Erro ao excluir tarefa: " . $e->getMessage());
-    die("Erro ao excluir tarefa.");
+    redirecionarComFlash("../dashboard/index.php", "error", "Erro ao excluir tarefa.");
 
 }

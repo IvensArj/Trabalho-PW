@@ -1,20 +1,21 @@
-version: '3.8'
-
 services:
-  # Nosso serviço de PHP que criamos no Dockerfile
   web:
     build: .
     ports:
       - "8080:80"
     volumes:
       - .:/var/www/html
+    depends_on:
+      - db
 
-  # Nosso serviço de Banco de Dados MySQL
   db:
     image: mysql:8.0
-    restart: always
     environment:
-      MYSQL_DATABASE: meu_banco
-      MYSQL_ROOT_PASSWORD: senha_secreta
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crud_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    volumes:
+      - ./banco.sql:/docker-entrypoint-initdb.d/banco.sql

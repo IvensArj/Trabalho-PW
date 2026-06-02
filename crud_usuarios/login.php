@@ -1,4 +1,8 @@
 <?php
+require_once "../includes/funcoes.php";
+
+iniciarSessaoSegura();
+
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
@@ -68,6 +72,8 @@ require_once "../includes/header.php";
                     role="tabpanel"
                     aria-labelledby="btnEntrar"
                 >
+                    <?= csrfInput(); ?>
+
                     <div class="login-field">
                         <label for="emailEntrar" class="login-label">Email</label>
                         <input
@@ -111,6 +117,7 @@ require_once "../includes/header.php";
                     aria-labelledby="btnCriar"
                     hidden
                 >
+                    <?= csrfInput(); ?>
 
                     <!-- ETAPA 1 -->
                     <div id="cadastroEtapa1">

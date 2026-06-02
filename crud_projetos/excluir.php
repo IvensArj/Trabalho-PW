@@ -5,6 +5,8 @@ require_once "../config/conexao.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    validarCsrf();
+
     $projetoId = $_POST["id"] ?? null;
     $usuarioId = $_SESSION["usuario_id"];
 
@@ -32,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (PDOException $e) {
 
         error_log("Erro ao excluir projeto: " . $e->getMessage());
-        die("Erro ao excluir projeto.");
+        redirecionarComFlash("../dashboard/index.php", "error", "Erro ao excluir projeto.");
 
     }
 }

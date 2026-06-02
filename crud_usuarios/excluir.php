@@ -5,6 +5,8 @@ require_once "../config/conexao.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    validarCsrf();
+
     $usuarioId = $_SESSION["usuario_id"];
 
     try {
@@ -24,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (PDOException $e) {
 
         error_log("Erro ao excluir cadastro: " . $e->getMessage());
-        die("Erro ao excluir cadastro.");
+        redirecionarComFlash("perfil.php", "error", "Erro ao excluir cadastro.");
 
     }
 

@@ -5,6 +5,7 @@ require_once "../config/conexao.php";
 require_once "../includes/funcoes.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    validarCsrf();
 
     $idTarefa = $_POST["id"] ?? null;
     $idProjeto = $_POST["id_projeto"] ?? null;
@@ -15,11 +16,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $idUser = $_SESSION["usuario_id"];
 
     if (!$idTarefa || !$idProjeto || empty($titulo)) {
-        die("Dados invalidos.");
+        redirecionarComFlash("../crud_projetos/projeto.php?id=" . urlencode((string) $idProjeto), "error", "Dados invalidos.");
     }
 
     if (!in_array($prioridade, ["Baixa", "Media", "Alta"]) || !in_array($status, ["A Fazer", "Fazendo", "Feito"])) {
-        die("Dados invalidos.");
+        redirecionarComFlash("../crud_projetos/projeto.php?id=" . urlencode((string) $idProjeto), "error", "Dados invalidos.");
     }
 
     try {
@@ -54,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } catch (PDOException $e) {
 
         error_log("Erro ao atualizar tarefa: " . $e->getMessage());
-        die("Erro ao atualizar tarefa.");
+        redirecionarComFlash("../crud_projetos/projeto.php?id=" . urlencode((string) $idProjeto), "error", "Erro ao atualizar tarefa.");
 
     }
 }
