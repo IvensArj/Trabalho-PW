@@ -5,17 +5,29 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_NAME: ${DB_NAME:-crud_db}
+      DB_USER: ${DB_USER:-user}
+      DB_PASS: ${DB_PASS:-password}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+        required: true
 
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: crud_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3307:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-crud_db}
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - ./banco.sql:/docker-entrypoint-initdb.d/banco.sql
+      - ./banco.sql:/docker-entrypoint-initdb.d/banco.sql:ro
