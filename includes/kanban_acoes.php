@@ -1,7 +1,21 @@
 <?php
+/**
+ * ENDPOINT DE AÇÕES DO KANBAN
+ * 
+ * Processa requisições AJAX para:
+ * - Atualizar o status de um projeto ou tarefa (arrastar entre colunas)
+ * - Excluir um projeto ou tarefa
+ * 
+ * Retorna JSON com status da operação.
+ */
 
 header("Content-Type: application/json; charset=utf-8");
 
+/**
+ * Função auxiliar para padronizar as respostas JSON
+ * @param mixed $dados  Dados a serem enviados
+ * @param int   $codigo Código HTTP
+ */
 function responderJson($dados, $codigo = 200) {
     http_response_code($codigo);
     echo json_encode($dados);
@@ -10,6 +24,7 @@ function responderJson($dados, $codigo = 200) {
 
 session_start();
 
+// Verifica se o usuário está autenticado
 if (!isset($_SESSION["usuario_id"])) {
     responderJson(["ok" => false, "mensagem" => "Sessao expirada. Faca login novamente."], 401);
 }
@@ -17,10 +32,12 @@ if (!isset($_SESSION["usuario_id"])) {
 require_once __DIR__ . "/../config/conexao.php";
 require_once __DIR__ . "/funcoes.php";
 
+// Apenas requisições POST são aceitas
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     responderJson(["ok" => false, "mensagem" => "Metodo invalido."], 405);
 }
 
+// Proteção CSRF
 validarCsrf();
 
 $acao = $_POST["acao"] ?? "";
@@ -30,18 +47,24 @@ $status = $_POST["status"] ?? "";
 $idUser = $_SESSION["usuario_id"];
 $statusValidos = ["A Fazer", "Fazendo", "Feito"];
 
+// Validação dos parâmetros obrigatórios
 if (!$id || !in_array($tipo, ["projeto", "tarefa"])) {
     responderJson(["ok" => false, "mensagem" => "Dados invalidos."], 400);
 }
 
 try {
 
+    /**
+     * Ação: ATUALIZAR STATUS
+     * Move o item para uma nova coluna do Kanban
+     */
     if ($acao === "atualizar_status") {
 
         if (!in_array($status, $statusValidos)) {
             responderJson(["ok" => false, "mensagem" => "Status invalido."], 400);
         }
 
+        // PROJETO: verifica propriedade e atualiza
         if ($tipo === "projeto") {
             $sql = "SELECT id_projeto FROM projetos
                     WHERE id_projeto = ?
@@ -72,6 +95,7 @@ try {
             responderJson(["ok" => true, "status" => $status]);
         }
 
+        // TAREFA: valida posse via inner join com projetos
         $sql = "SELECT tarefas.id_projeto FROM tarefas
                 INNER JOIN projetos ON projetos.id_projeto = tarefas.id_projeto
                 WHERE tarefas.id_tarefa = ?
@@ -99,6 +123,7 @@ try {
             $id
         ]);
 
+        // Atualiza automaticamente o status do projeto pai
         $statusProjeto = atualizarStatusProjeto($pdo, $tarefa->id_projeto, $idUser);
 
         responderJson([
@@ -108,6 +133,10 @@ try {
         ]);
     }
 
+    /**
+     * Ação: EXCLUIR
+     * Remove o projeto ou tarefa definitivamente
+     */
     if ($acao === "excluir") {
 
         if ($tipo === "projeto") {
@@ -128,6 +157,7 @@ try {
             responderJson(["ok" => true]);
         }
 
+        // Tarefa: busca o id_projeto antes de excluir para atualizar status do projeto
         $sql = "SELECT tarefas.id_projeto FROM tarefas
                 INNER JOIN projetos ON projetos.id_projeto = tarefas.id_projeto
                 WHERE tarefas.id_tarefa = ?
@@ -159,6 +189,7 @@ try {
         ]);
     }
 
+    // Caso a ação informada não seja reconhecida
     responderJson(["ok" => false, "mensagem" => "Acao invalida."], 400);
 
 } catch (PDOException $e) {

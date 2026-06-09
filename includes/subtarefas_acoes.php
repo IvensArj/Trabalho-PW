@@ -1,4 +1,14 @@
 <?php
+/**
+ * ENDPOINT DE SUBTAREFAS
+ * 
+ * Processa ações AJAX para gerenciamento de subtarefas:
+ * - Criar uma nova subtarefa
+ * - Marcar/desmarcar como concluída
+ * - Excluir subtarefa
+ * 
+ * Sempre valida se a tarefa pai pertence ao usuário logado.
+ */
 
 header("Content-Type: application/json; charset=utf-8");
 
@@ -28,6 +38,9 @@ $idUser = $_SESSION["usuario_id"];
 
 try {
 
+    /**
+     * Ação: CRIAR SUBTAREFA
+     */
     if ($acao === "criar") {
         $idTarefa = $_POST["id_tarefa"] ?? null;
         $titulo = trim($_POST["titulo"] ?? "");
@@ -36,6 +49,7 @@ try {
             responderJson(["ok" => false, "mensagem" => "Informe a subtarefa."], 400);
         }
 
+        // Verifica se a tarefa pertence ao usuário (através do projeto)
         $sql = "SELECT tarefas.id_tarefa FROM tarefas
                 INNER JOIN projetos ON projetos.id_projeto = tarefas.id_projeto
                 WHERE tarefas.id_tarefa = ?
@@ -60,6 +74,7 @@ try {
             $titulo
         ]);
 
+        // Retorna a nova subtarefa para o front-end adicioná-la à lista
         responderJson([
             "ok" => true,
             "subtarefa" => [
@@ -70,6 +85,9 @@ try {
         ]);
     }
 
+    /**
+     * Ação: ALTERNAR STATUS (concluída/não concluída)
+     */
     if ($acao === "alternar") {
         $idSubtarefa = $_POST["id_subtarefa"] ?? null;
         $concluida = isset($_POST["concluida"]) && $_POST["concluida"] == "1" ? 1 : 0;
@@ -78,6 +96,7 @@ try {
             responderJson(["ok" => false, "mensagem" => "Subtarefa invalida."], 400);
         }
 
+        // Verifica pertencimento ao usuário
         $sql = "SELECT subtarefas.id_subtarefa FROM subtarefas
                 INNER JOIN tarefas ON tarefas.id_tarefa = subtarefas.id_tarefa
                 INNER JOIN projetos ON projetos.id_projeto = tarefas.id_projeto
@@ -110,6 +129,9 @@ try {
         ]);
     }
 
+    /**
+     * Ação: EXCLUIR SUBTAREFA
+     */
     if ($acao === "excluir") {
         $idSubtarefa = $_POST["id_subtarefa"] ?? null;
 
@@ -117,6 +139,7 @@ try {
             responderJson(["ok" => false, "mensagem" => "Subtarefa invalida."], 400);
         }
 
+        // DELETE com JOIN para garantir que só o dono possa excluir
         $sql = "DELETE subtarefas FROM subtarefas
                 INNER JOIN tarefas ON tarefas.id_tarefa = subtarefas.id_tarefa
                 INNER JOIN projetos ON projetos.id_projeto = tarefas.id_projeto

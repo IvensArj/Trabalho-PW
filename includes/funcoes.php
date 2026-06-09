@@ -1,5 +1,20 @@
 <?php
+/**
+ * FUNÇÕES UTILITÁRIAS DO SISTEMA
+ *
+ * Contém funções reutilizáveis para:
+ * - Gerenciamento de sessão segura (início e CSRF)
+ * - Mensagens flash (feedback após redirecionamento)
+ * - Upload e manipulação de avatares
+ * - Análise de prazos de entrega (projetos)
+ * - Atualização automática de status de projetos baseado nas tarefas
+ * - Limitação de texto para exibição no Kanban
+ * - Renderização do quadro Kanban (projetos e tarefas)
+ */
 
+/**
+ * Inicia a sessão apenas se ainda não estiver ativa
+ */
 function iniciarSessaoSegura(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -7,6 +22,10 @@ function iniciarSessaoSegura(): void
     }
 }
 
+/**
+ * Gera ou recupera o token CSRF da sessão
+ * @return string Token CSRF
+ */
 function csrfToken(): string
 {
     iniciarSessaoSegura();
@@ -18,11 +37,19 @@ function csrfToken(): string
     return $_SESSION['csrf_token'];
 }
 
+/**
+ * Cria um campo hidden com o token CSRF para inclusão em formulários
+ * @return string HTML do input hidden
+ */
 function csrfInput(): string
 {
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') . '">';
 }
 
+/**
+ * Valida o token CSRF recebido via POST contra o da sessão
+ * @throws RuntimeException se o token for inválido
+ */
 function validarCsrf(): void
 {
     iniciarSessaoSegura();
@@ -36,6 +63,12 @@ function validarCsrf(): void
     }
 }
 
+/**
+ * Armazena uma mensagem flash na sessão para exibição na próxima requisição
+ *
+ * @param string $tipo    success|error|info...
+ * @param string $mensagem Texto da mensagem
+ */
 function flashMessage(string $tipo, string $mensagem): void
 {
     iniciarSessaoSegura();
@@ -45,6 +78,10 @@ function flashMessage(string $tipo, string $mensagem): void
     ];
 }
 
+/**
+ * Recupera e remove a mensagem flash da sessão
+ * @return array|null Array com 'tipo' e 'mensagem' ou null
+ */
 function consumirFlashMessage(): ?array
 {
     iniciarSessaoSegura();
@@ -59,6 +96,10 @@ function consumirFlashMessage(): ?array
     return $flash;
 }
 
+/**
+ * Define uma mensagem flash e redireciona para a URL especificada
+ * (atalho para flashMessage + header Location)
+ */
 function redirecionarComFlash(string $url, string $tipo, string $mensagem): void
 {
     flashMessage($tipo, $mensagem);
@@ -66,21 +107,39 @@ function redirecionarComFlash(string $url, string $tipo, string $mensagem): void
     exit;
 }
 
+/**
+ * Retorna a URL correta do avatar do usuário, tratando caminhos padrão
+ *
+ * @param string|null $fotoPerfil Nome do arquivo ou URL
+ * @return string URL final da imagem
+ */
 function avatarUsuarioUrl(?string $fotoPerfil): string
 {
     $fotoPerfil = trim((string) $fotoPerfil);
 
+    // Se for vazio ou o padrão, retorna imagem default
     if ($fotoPerfil === '' || $fotoPerfil === 'default.png' || $fotoPerfil === '../assets/image/default.png') {
         return '../assets/image/default.png';
     }
 
+    // Se for uma URL absoluta ou relativa à raiz, mantém como está
     if (preg_match('#^(?:https?:)?//#i', $fotoPerfil) || str_starts_with($fotoPerfil, '/')) {
         return $fotoPerfil;
     }
 
+    // Senão, assume que está na pasta de uploads de avatares
     return '../uploads/avatares/' . ltrim($fotoPerfil, '/\\');
 }
 
+/**
+ * Salva uma imagem em base64 (data URI) no diretório de avatares
+ * Realiza validações de formato (PNG/JPEG), tamanho e integridade
+ *
+ * @param string|null $dataUri           Data URI da imagem
+ * @param string      $diretorioRelativo Caminho relativo para salvar
+ * @param int         $tamanhoMaximoBytes Tamanho máximo em bytes (padrão 1MB)
+ * @return string|null Nome do arquivo salvo ou null em caso de erro
+ */
 function salvarAvatarBase64(?string $dataUri, string $diretorioRelativo = '../uploads/avatares/', int $tamanhoMaximoBytes = 1048576): ?string
 {
     $dataUri = trim((string) $dataUri);
@@ -89,6 +148,7 @@ function salvarAvatarBase64(?string $dataUri, string $diretorioRelativo = '../up
         return null;
     }
 
+    // Aceita apenas PNG ou JPEG
     if (!preg_match('#^data:image/(png|jpeg);base64,#i', $dataUri)) {
         return null;
     }
@@ -112,6 +172,7 @@ function salvarAvatarBase64(?string $dataUri, string $diretorioRelativo = '../up
 
     $diretorio = rtrim($diretorioRelativo, "/\\") . DIRECTORY_SEPARATOR;
 
+    // Cria o diretório se não existir
     if (!is_dir($diretorio)) {
         mkdir($diretorio, 0777, true);
     }
@@ -127,6 +188,14 @@ function salvarAvatarBase64(?string $dataUri, string $diretorioRelativo = '../up
     return $nomeArquivo;
 }
 
+/**
+ * Analisa o prazo de entrega em relação à data atual e retorna
+ * classe CSS, rótulo e detalhe para exibição no card do projeto
+ *
+ * @param string|null $dataEntrega Data no formato Y-m-d
+ * @param string|null $status      Status do projeto (ex: 'Feito')
+ * @return array|null Array com 'classe', 'rotulo', 'detalhe', 'dias' ou null
+ */
 function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?array
 {
     $dataEntrega = trim((string) $dataEntrega);
@@ -139,8 +208,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
     $erros = DateTimeImmutable::getLastErrors();
 
     if (
-        $data === false
-        || ($erros !== false && (($erros['warning_count'] ?? 0) > 0 || ($erros['error_count'] ?? 0) > 0))
+        $data === false || ($erros !== false && (($erros['warning_count'] ?? 0) > 0 || ($erros['error_count'] ?? 0) > 0))
     ) {
         return null;
     }
@@ -149,6 +217,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
     $dias = (int) $hoje->diff($data)->format('%r%a');
     $dataFormatada = $data->format('d/m/Y');
 
+    // Se o projeto estiver concluído, exibe como "Concluido"
     if (trim((string) $status) === 'Feito') {
         return [
             'classe' => 'deadline-done',
@@ -158,6 +227,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
         ];
     }
 
+    // Casos de prazo vencido
     if ($dias < 0) {
         return [
             'classe' => 'deadline-overdue',
@@ -167,6 +237,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
         ];
     }
 
+    // Vence hoje
     if ($dias === 0) {
         return [
             'classe' => 'deadline-today',
@@ -176,6 +247,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
         ];
     }
 
+    // Prazo curto: até 3 dias
     if ($dias <= 3) {
         return [
             'classe' => 'deadline-soon',
@@ -185,6 +257,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
         ];
     }
 
+    // Prazo em breve: até 7 dias
     if ($dias <= 7) {
         return [
             'classe' => 'deadline-upcoming',
@@ -194,6 +267,7 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
         ];
     }
 
+    // Prazo tranquilo
     return [
         'classe' => 'deadline-ok',
         'rotulo' => 'No prazo',
@@ -202,6 +276,17 @@ function analisarPrazoEntrega(?string $dataEntrega, ?string $status = null): ?ar
     ];
 }
 
+/**
+ * Atualiza o status de um projeto com base na contagem dos status de suas tarefas
+ * - Se não houver tarefas ou todas estiverem "A Fazer" -> "A Fazer"
+ * - Se todas estiverem "Feito" -> "Feito"
+ * - Caso contrário -> "Fazendo"
+ *
+ * @param PDO    $pdo        Conexão com o banco
+ * @param int    $idProjeto  ID do projeto
+ * @param int|null $idUser   ID do usuário (se fornecida, restringe a atualização ao dono)
+ * @return string Novo status do projeto
+ */
 function atualizarStatusProjeto($pdo, $idProjeto, $idUser = null) {
 
     $sql = "SELECT status, COUNT(*) AS total
@@ -214,8 +299,8 @@ function atualizarStatusProjeto($pdo, $idProjeto, $idUser = null) {
 
     $contagens = [
         "A Fazer" => 0,
-        "Fazendo" => 0,
-        "Feito" => 0
+        "Fazendo"  => 0,
+        "Feito"    => 0
     ];
 
     $totalTarefas = 0;
@@ -235,6 +320,7 @@ function atualizarStatusProjeto($pdo, $idProjeto, $idUser = null) {
         $novoStatus = "Fazendo";
     }
 
+    // Atualização no banco, opcionalmente filtrando pelo dono
     if ($idUser !== null) {
         $sql = "UPDATE projetos
                 SET status = ?
@@ -264,6 +350,16 @@ function atualizarStatusProjeto($pdo, $idProjeto, $idUser = null) {
     return $novoStatus;
 }
 
+/**
+ * Limita uma descrição (string) a um número máximo de linhas visuais,
+ * com base em uma contagem aproximada de caracteres por linha.
+ * Útil para exibir prévias no Kanban sem quebrar o layout.
+ *
+ * @param string $texto              Texto completo
+ * @param int    $limiteLinhas       Máximo de linhas (padrão 6)
+ * @param int    $caracteresPorLinha Caracteres estimados por linha (padrão 42)
+ * @return string Texto truncado com " [...]" se houver corte
+ */
 function limitarDescricaoKanban($texto, $limiteLinhas = 6, $caracteresPorLinha = 42) {
     $texto = (string) $texto;
     $linhas = preg_split("/\r\n|\r|\n/", $texto);
@@ -276,6 +372,7 @@ function limitarDescricaoKanban($texto, $limiteLinhas = 6, $caracteresPorLinha =
             ? mb_strlen($linha, "UTF-8")
             : strlen($linha);
 
+        // Quantas linhas visuais esta linha real ocupa
         $linhasNecessarias = max(1, (int) ceil($tamanhoLinha / $caracteresPorLinha));
         $linhasRestantes = $limiteLinhas - $linhasUsadas;
 
@@ -284,6 +381,7 @@ function limitarDescricaoKanban($texto, $limiteLinhas = 6, $caracteresPorLinha =
             break;
         }
 
+        // Se a linha inteira não couber, corta no limite de caracteres
         if ($linhasNecessarias > $linhasRestantes) {
             $limiteCaracteres = $linhasRestantes * $caracteresPorLinha;
             $resultado[] = function_exists("mb_substr")
@@ -308,9 +406,16 @@ function limitarDescricaoKanban($texto, $limiteLinhas = 6, $caracteresPorLinha =
     return $foiCortado ? $textoLimitado . " [...]" : $textoLimitado;
 }
 
-
+/**
+ * Renderiza o quadro Kanban de projetos ou tarefas
+ *
+ * @param array $items    Array de objetos (projetos ou tarefas) com status, etc.
+ * @param string $tipo    'projeto' ou 'tarefa'
+ * @param int    $idProjeto ID do projeto (apenas para tarefas, para link de "adicionar")
+ */
 function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): void
 {
+    // Organiza itens nas colunas por status
     $colunas = [
         'A Fazer' => [],
         'Fazendo'  => [],
@@ -331,12 +436,14 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
         ? 'Solte aqui para excluir a tarefa'
         : 'Solte aqui para excluir o projeto';
 
+    // Configuração visual das colunas
     $configColunas = [
         'A Fazer' => ['classe' => 'col-amber', 'icone' => '○'],
         'Fazendo' => ['classe' => 'col-blue',  'icone' => '◐'],
         'Feito'   => ['classe' => 'col-green', 'icone' => '●'],
     ];
 
+    // Atalho para escapar strings
     $esc = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
     ?>
 
@@ -362,6 +469,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                     </div>
 
                     <?php if (empty($lista)): ?>
+                        <!-- Mensagem de coluna vazia com link para adicionar -->
                         <div class="card-empty" data-empty-message>
                             <?php if ($tipo === 'tarefa'): ?>
                                 <a href="../crud_tarefas/adicionar.php?id_projeto=<?= $idProjeto; ?>">+ nenhuma tarefa aqui ainda</a>
@@ -376,6 +484,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                 $tituloItem = (string) ($item->titulo ?? 'Sem titulo');
                                 $tituloId = "kanban-" . $nomeTipo . "-" . $id . "-titulo";
 
+                                // Links específicos para projetos ou tarefas
                                 if ($tipo === 'projeto') {
                                     $abrir  = "../crud_projetos/projeto.php?id=" . $id;
                                     $editar = "../crud_projetos/editar.php?id=" . $id;
@@ -391,6 +500,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     $excluir = "../crud_tarefas/excluir.php";
                                 }
 
+                                // Limita a descrição para exibição no card
                                 $descricao = $item->descricao ?? '';
                                 if ($descricao !== '' && function_exists('limitarDescricaoKanban')) {
                                     $descricao = limitarDescricaoKanban($descricao);
@@ -413,6 +523,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     <?= $esc($item->titulo ?? 'Sem título'); ?>
                                 </h3>
 
+                                <!-- Barra de progresso para projetos -->
                                 <?php if ($tipo === 'projeto' && $total > 0): ?>
                                     <div class="card-progress-wrap">
                                         <div class="card-progress-bar" aria-hidden="true">
@@ -428,6 +539,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- Prazo de entrega (apenas para projetos) -->
                                 <?php if ($tipo === 'projeto'): ?>
                                     <div class="deadline-pill <?= !empty($prazo) ? $esc($prazo['classe']) : 'deadline-muted'; ?>">
                                         <span class="deadline-pill__label">
@@ -439,12 +551,14 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- Descrição truncada da tarefa -->
                                 <?php if ($tipo === 'tarefa' && $descricao !== ''): ?>
                                     <p class="card-desc" title="<?= $esc($item->descricao ?? ''); ?>">
                                         <?= nl2br($esc($descricao)); ?>
                                     </p>
                                 <?php endif; ?>
 
+                                <!-- Prioridade (tarefas) -->
                                 <?php if ($tipo === 'tarefa' && isset($item->prioridade)): ?>
                                     <div class="card-priority-wrap">
                                         <span class="priority-pill">
@@ -453,6 +567,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- Bloco de subtarefas (apenas tarefas) -->
                                 <?php if ($tipo === 'tarefa'): ?>
                                     <?php
                                         $totalSubtarefas = count($subtarefas);
@@ -517,6 +632,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                             <?php endforeach; ?>
                                         </div>
 
+                                        <!-- Formulário de nova subtarefa (oculto por padrão) -->
                                         <form class="subtask-form hidden" data-subtask-form>
                                             <input
                                                 type="text"
@@ -534,6 +650,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- Ações do card: abrir, editar, excluir -->
                                 <div class="card-meta">
                                     <?php if ($tipo === 'projeto'): ?>
                                         <a
@@ -577,6 +694,7 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
             <?php endforeach; ?>
         </section>
 
+        <!-- Área de lixeira para exclusão via drag-and-drop -->
         <div class="kanban-trash nb-trash" data-kanban-trash>
             <?= $esc($textoLixeira); ?>
         </div>
@@ -584,5 +702,3 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
 
     <?php
 }
-
-?>

@@ -14,6 +14,7 @@ if (!$idProjeto) {
 $sql = "SELECT * FROM projetos
         WHERE id_projeto = ?
         AND id_user = ?";
+        
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$idProjeto, $idUser]);
 $projeto = $stmt->fetch(PDO::FETCH_OBJ);
