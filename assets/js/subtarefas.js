@@ -68,6 +68,7 @@
     document.addEventListener("click", function (event) {
         var toggle = event.target.closest("[data-subtask-add-toggle]");
         var deleteButton = event.target.closest("[data-subtask-delete]");
+        var editButton = event.target.closest("[data-subtask-edit]");
 
         if (toggle) {
             var container = toggle.closest("[data-subtasks]");
@@ -80,6 +81,65 @@
             if (!form.classList.contains("hidden")) {
                 input.focus();
             }
+        }
+
+        if (editButton) {
+            var item      = editButton.closest("[data-subtask-item]");
+            var titleSpan = item.querySelector("[data-subtask-title]");
+
+            // Evita abrir dois inputs ao mesmo tempo no mesmo item
+            if (item.querySelector("[data-subtask-edit-input]")) return;
+
+            var currentTitle = titleSpan.textContent.trim();
+
+            // Substitui o span por um input inline
+            var input = document.createElement("input");
+            input.type = "text";
+            input.value = currentTitle;
+            input.className = "subtask-input";
+            input.dataset.subtaskEditInput = "";
+            input.maxLength = 150;
+
+            titleSpan.replaceWith(input);
+            editButton.disabled = true;
+            input.focus();
+            input.select();
+
+            function commit() {
+                var newTitle = input.value.trim();
+
+                if (!newTitle || newTitle === currentTitle) {
+                    input.replaceWith(titleSpan); // cancela sem chamada
+                    editButton.disabled = false;
+                    return;
+                }
+
+                input.disabled = true;
+
+                requestSubtaskAction({
+                    acao:         "editar",
+                    id_subtarefa: item.dataset.subtaskId,
+                    titulo:       newTitle
+                }).then(function (data) {
+                    titleSpan.textContent = data.titulo;
+                    input.replaceWith(titleSpan);
+                }).catch(function (error) {
+                    input.replaceWith(titleSpan); // reverte visualmente
+                    if (typeof window.showAppMessage === "function") {
+                        window.showAppMessage(error.message, "error");
+                    } else {
+                        alert(error.message);
+                    }
+                }).finally(function () {
+                    editButton.disabled = false;
+                });
+            }
+
+            input.addEventListener("blur",    commit);
+            input.addEventListener("keydown", function (e) {
+                if (e.key === "Enter")  { e.preventDefault(); commit(); }
+                if (e.key === "Escape") { input.replaceWith(titleSpan); editButton.disabled = false; }
+            });
         }
 
         if (deleteButton) {

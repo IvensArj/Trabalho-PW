@@ -1,21 +1,30 @@
 <?php
-require_once "../includes/funcoes.php";
 
-iniciarSessaoSegura();
+// CRUD de usuários - Página de login e cadastro
 
+require_once "../includes/funcoes.php"; // Inclui funções auxiliares
+
+iniciarSessaoSegura(); // Inicia uma sessão apenas se ainda não estiver iniciada
+
+
+// Configura cabeçalhos para evitar cache e garantir que as informações de login sejam sempre atualizadas
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header("Expires: 0");
 
-$titulo = "Acesse sua conta";
-require_once "../includes/header.php";
+
+$titulo = "Acesse sua conta"; // Título da página
+require_once "../includes/header.php"; // Inclui o cabeçalho da página
 ?>
 
 
-<canvas id="mouse-trail"></canvas>
+<!-- Trilha do mouse -->
+<canvas id="mouse-trail"></canvas> 
 
 <main class=" login-page">
+
+    <!-- Painel de marca -->
     <section class="login-brand-panel" aria-label="NEXO">
         <div class="login-brand-card">
             <div class="login-logo-frame">
@@ -30,8 +39,13 @@ require_once "../includes/header.php";
         </div>
     </section>
 
+    <!-- Painel de autenticação -->
     <section class="login-auth-panel" aria-label="Acesso">
+
+        <!-- Formulário de autenticação -->
         <div class="login-auth-card">
+
+            <!-- Abas de navegação -->
             <div class="login-tabs" role="tablist" aria-label="Alternar formulario">
                 <button
                     type="button"
@@ -57,6 +71,7 @@ require_once "../includes/header.php";
                 </button>
             </div>
 
+            <!-- Formulário de Login -->
             <div class="login-form-shell">
                 <div class="login-rings" aria-hidden="true">
                     <?php for ($i = 0; $i < 7; $i++): ?>
@@ -109,7 +124,8 @@ require_once "../includes/header.php";
                         <button type="submit" class="btn btn-primary login-submit">Avancar</button>
                     </div>
                 </form>
-
+                
+                <!-- Formulário de cadastro -->
                 <form
                     action="cadastrar.php"
                     method="POST"
@@ -187,6 +203,14 @@ require_once "../includes/header.php";
                                     autocomplete="new-password"
                                     required
                                 >
+
+                                <button
+                                    type="button"
+                                    class="login-eye"
+                                    id="toggleConfirmarSenhaCriar"
+                                >
+                                    <i class="fi fi-sr-eye-crossed"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -331,6 +355,7 @@ require_once "../includes/header.php";
 
     const toggleSenha = document.getElementById('toggleSenha');
     const toggleSenhaCriar = document.getElementById('toggleSenhaCriar');
+    const toggleSenhaConfirmar = document.getElementById('toggleConfirmarSenhaCriar');
 
     if (toggleSenha) {
       toggleSenha.innerHTML = '<i class="fi fi-sr-eye-crossed"></i>';
@@ -338,6 +363,10 @@ require_once "../includes/header.php";
 
     if (toggleSenhaCriar) {
       toggleSenhaCriar.innerHTML = '<i class="fi fi-sr-eye-crossed"></i>';
+    }
+
+    if (toggleSenhaConfirmar) {
+      toggleSenhaConfirmar.innerHTML = '<i class="fi fi-sr-eye-crossed"></i>';
     }
   }
 
@@ -396,6 +425,7 @@ require_once "../includes/header.php";
 
   configurarToggleSenha('senha', 'toggleSenha');
   configurarToggleSenha('senhaCriar', 'toggleSenhaCriar');
+  configurarToggleSenha('confirmarSenhaCriar', 'toggleConfirmarSenhaCriar');
 
   function avancarCadastro() {
 

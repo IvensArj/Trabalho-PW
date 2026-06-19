@@ -159,6 +159,38 @@ try {
         responderJson(["ok" => true]);
     }
 
+    /**
+     * Ação: EDITAR SUBTAREFA
+     */
+    if ($acao === "editar") {
+        $idSubtarefa = $_POST["id_subtarefa"] ?? null;
+        $titulo      = trim($_POST["titulo"] ?? "");
+
+        if (!$idSubtarefa || $titulo === "") {
+            responderJson(["ok" => false, "mensagem" => "Titulo invalido."], 400);
+        }
+
+        // Verifica pertencimento ao usuário
+        $sql = "SELECT subtarefas.id_subtarefa FROM subtarefas
+                INNER JOIN tarefas  ON tarefas.id_tarefa    = subtarefas.id_tarefa
+                INNER JOIN projetos ON projetos.id_projeto  = tarefas.id_projeto
+                WHERE subtarefas.id_subtarefa = ?
+                AND projetos.id_user = ?";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$idSubtarefa, $idUser]);
+
+        if (!$stmt->fetch(PDO::FETCH_OBJ)) {
+            responderJson(["ok" => false, "mensagem" => "Subtarefa nao encontrada."], 404);
+        }
+
+        $sql = "UPDATE subtarefas SET titulo = ? WHERE id_subtarefa = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$titulo, $idSubtarefa]);
+
+        responderJson(["ok" => true, "titulo" => $titulo]);
+    }
+
     responderJson(["ok" => false, "mensagem" => "Acao invalida."], 400);
 
 } catch (PDOException $e) {

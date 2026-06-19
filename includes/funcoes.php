@@ -620,14 +620,26 @@ function render(array $items, string $tipo = 'projeto', int $idProjeto = 0): voi
                                                         <?= $esc($subtarefa->titulo ?? ''); ?>
                                                     </span>
 
-                                                    <button
-                                                        type="button"
-                                                        class="subtask-delete"
-                                                        data-subtask-delete
-                                                        aria-label="Excluir subtarefa <?= $esc($subtarefa->titulo ?? ''); ?>"
-                                                    >
-                                                        x
-                                                    </button>
+                                                    <div class="flex items-center justify-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            class="subtask-edit"
+                                                            data-subtask-edit
+                                                            aria-label="Editar subtarefa <?= $esc($subtarefa->titulo ?? ''); ?>"
+                                                        >
+                                                            <i class="fa-solid fa-pen-to-square" style="color: rgb(0, 92, 255);"></i>
+                                                        </button>
+                                                        
+                                                        <button
+                                                            type="button"
+                                                            class="subtask-delete"
+                                                            data-subtask-delete
+                                                            aria-label="Excluir subtarefa <?= $esc($subtarefa->titulo ?? ''); ?>"
+                                                        >
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
+                                                    </div>
+
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
