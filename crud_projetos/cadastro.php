@@ -56,7 +56,7 @@ require_once "../includes/header.php";
                         id="data_entrega"
                         name="data_entrega"
                         class="form-control"
-                        value="<?= date('Y-m-d') ?>"
+                        value="<?= date('Y-m-d', strtotime('+1 day')) ?>"
                         min="<?= date('Y-m-d') ?>"
                         required
                     >

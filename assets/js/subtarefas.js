@@ -44,7 +44,8 @@
         wrapper.innerHTML = [
             '<input type="checkbox" class="subtask-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" data-subtask-checkbox>',
             '<span class="min-w-0 flex-1 text-slate-700" data-subtask-title>' + escapeHtml(subtask.titulo) + '</span>',
-            '<button type="button" class="subtask-delete text-xs font-semibold text-rose-600 hover:text-rose-700" data-subtask-delete aria-label="Excluir subtarefa">x</button>'
+            '<button type="button" class="subtask-edit" data-subtask-edit aria-label="Editar subtarefa <?= $esc($subtarefa->titulo ?? ""); ?> <i class="fa-solid fa-pen-to-square" style="color: rgb(0, 92, 255);"></i></button>',
+            '<button type="button" class="subtask-delete text-xs font-semibold text-rose-600 hover:text-rose-700" data-subtask-delete aria-label="Excluir subtarefa"><i class="fa-solid fa-xmark"></i></button>'
         ].join("");
 
         return wrapper;

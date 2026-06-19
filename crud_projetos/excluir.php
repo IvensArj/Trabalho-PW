@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $usuarioId
         ]);
 
-        header("Location: ../dashboard/index.php");
+        redirecionarComFlash("../dashboard/index.php", "success", "Projeto excluído com sucesso!");
         exit;
 
     } catch (PDOException $e) {

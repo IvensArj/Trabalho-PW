@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $dataCriacao
     ]);
 
-    header("Location: ../dashboard/index.php");
+    redirecionarComFlash("../dashboard/index.php", "success", "Projeto adicionado com sucesso!");
     exit;
 }
 

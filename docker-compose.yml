@@ -4,7 +4,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - .:/var/www/html
+      - .:/var/www/html:delegated
     environment:
       DB_HOST: ${DB_HOST:-db}
       DB_NAME: ${DB_NAME:-crud_db}
@@ -26,8 +26,8 @@ services:
       test:
         - CMD-SHELL
         - mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 5
     volumes:
       - ./banco.sql:/docker-entrypoint-initdb.d/banco.sql:ro

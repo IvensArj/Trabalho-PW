@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         atualizarStatusProjeto($pdo, $idProjeto, $idUser);
 
-        header("Location: ../crud_projetos/projeto.php?id=" . $idProjeto);
+        redirecionarComFlash("../crud_projetos/projeto.php?id=" . $idProjeto, "success", "Tarefa atualizada com sucesso!");
         exit;
 
     } catch (PDOException $e) {

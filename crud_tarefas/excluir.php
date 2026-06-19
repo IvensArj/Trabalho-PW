@@ -53,7 +53,7 @@ if (!$tarefa) {
 
     atualizarStatusProjeto($pdo, $tarefa->id_projeto, $idUser);
 
-    header("Location: ../crud_projetos/projeto.php?id=" . $tarefa->id_projeto);
+    redirecionarComFlash("../crud_projetos/projeto.php?id=" . $tarefa->id_projeto, "success", "Tarefa excluída com sucesso!");
     exit;
 
 } catch (PDOException $e) {
